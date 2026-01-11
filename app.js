@@ -41,7 +41,10 @@ fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 					++total;
 					if(total == count){
 						update_ui(document.body.clientWidth - scrollbar_width());
-						window.onresize = _ => update_ui(false);
+						window.onresize = _ => {
+							update_ui(false);
+							if(focus != -1) recheck_focus();
+						}
 					}
 				});
 		}
@@ -143,16 +146,20 @@ function refocus(i){
 
 window.addEventListener("wheel", (event) => {
 	manual_scroll_trip = true;
-});
 
-window.addEventListener("scroll", (event) => {
 	if(focus == -1) return;
 
-	const E = document.getElementById("photo-item-" + focus.toString());
-	const rect = E.getBoundingClientRect();
-
-	if(rect.bottom < 0+200 || rect.top > window.innerHeight-200) refocus(-1);
+	recheck_focus();
 });
+
+function recheck_focus(){
+	const E = document.getElementById("photo-item-" + focus.toString());
+
+	if(E){
+		const rect = E.getBoundingClientRect();
+		if(rect.bottom < 0+200 || rect.top > window.innerHeight-200) refocus(-1);
+	}
+}
 
 window.addEventListener("popstate", (event) => {
 	if(event.state && Array.isArray(event.state) && event.state.length == 2){
