@@ -346,7 +346,7 @@ function update_ui(W){
 				position: 'fixed',
 				top: '0px',
 				left: (margin_left+column_width*3/4).toString() + "px",
-				width: (column_width*2).toString() + "px",
+				width: (width-margin_left-column_width*3/4).toString() + "px",
 				height: "100%",
 			});
 
