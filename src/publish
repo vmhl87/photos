@@ -1,0 +1,38 @@
+#!/bin/bash
+
+read -p "photo location: " location
+dimensions=$(identify -format "%w,%h" "$location")
+
+read -p "enter to begin editing metadata" meta
+
+cp meta-template meta
+vim meta
+
+python3 meta-convert.py "$dimensions"
+
+echo metadata entered:
+cat meta.json
+echo
+
+read -p "confirm: (y/N) " confirm
+
+if [[ "$confirm" == "y" ]]; then
+	id=$(cat count)
+	mkdir "$id/"
+
+	cp "$location" "../assets/${id}_fullres.jpg"
+	mogrify -resize 2000x -quality 90 "../assets/${id}_fullres.jpg"
+	exiftool -overwrite_original -all= "../assets/${id}_fullres.jpg"
+	convert "../assets/${id}_fullres.jpg" -resize 500x "../assets/${id}_scaled.jpg"
+	cp meta.json "${id}_meta.json"
+
+	echo $((id+1)) > count
+	rm meta meta.json
+
+	echo done
+
+else
+	rm meta meta.json
+
+	echo aborted
+fi

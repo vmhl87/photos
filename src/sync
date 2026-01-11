@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source ./env
+
+cld sync --push ../assets photo-assets -o use_filename true -o unique_filename false

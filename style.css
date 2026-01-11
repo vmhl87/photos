@@ -1,0 +1,103 @@
+:root {
+	--margin: 10px;
+}
+
+html, body{
+	margin: 0;
+}
+
+body {
+	background-color: #EEE;
+	color: #444;
+
+	font-family: "Noto Sans Mono", monospace;
+	font-weight: <weight>;
+	font-style: normal;
+	font-size: 14px;
+}
+
+html {
+	scrollbar-color: #999 #DDD;
+}
+
+#text-column {
+	padding-top: 100px;
+	text-align: right;
+
+	h2, p {
+		margin-left: 40px;
+		margin-right: 40px;
+	}
+
+	h2 {
+		margin-bottom: 0px;
+
+		a {
+			text-decoration: none;
+			color: #444;
+		}
+
+		a:hover {
+			color: #339;
+		}
+	}
+
+	p.small {
+		margin-top: 0px;
+		margin-bottom: 2em;
+		font-size: 10px;
+		color: #666;
+
+		a {
+			text-decoration: none;
+			color: #666;
+		}
+
+		a:hover {
+			color: #55A;
+		}
+	}
+
+	p.small2 {
+		margin-top: 2em;
+		font-size: 10px;
+		color: #666;
+
+		a {
+			text-decoration: none;
+			color: #666;
+		}
+
+		a:hover {
+			color: #55A;
+		}
+	}
+}
+
+#photo-column-1, #photo-column-2 {
+	padding: 0px;
+	margin: 0px;
+	padding-bottom: var(--margin);
+	z-index: 99;
+
+	img {
+		display: block;
+		box-sizing: border-box;
+		width: 100%;
+		padding-right: var(--margin);
+		padding-top: var(--margin);
+		transition: transform 0.25s ease, opacity 0.5s ease;
+	}
+
+	img:hover {
+		transform: scale(1.01);
+	}
+}
+
+div.no-transform > img:hover {
+	transform: none !important;
+}
+
+#backdrop {
+	background-color: "black";
+}
