@@ -34,15 +34,16 @@ fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 		let total = 0;
 
 		for(let i=0; i<count; ++i){
-			fetch(assets_location_raw + i.toString() + "_meta.json").then((res) => res.text()).then((_text) => {
-				photos[i] = JSON.parse(_text);
+			fetch(assets_location_raw + i.toString() + "_meta.json?t=" + new Date().getTime())
+				.then((res) => res.text()).then((_text) => {
+					photos[i] = JSON.parse(_text);
 
-				++total;
-				if(total == count){
-					update_ui(document.body.clientWidth - scrollbar_width());
-					window.onresize = _ => update_ui(false);
-				}
-			});
+					++total;
+					if(total == count){
+						update_ui(document.body.clientWidth - scrollbar_width());
+						window.onresize = _ => update_ui(false);
+					}
+				});
 		}
 	});
 });
