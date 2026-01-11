@@ -17,16 +17,16 @@ echo
 read -p "confirm: (y/N) " confirm
 
 if [[ "$confirm" == "y" ]]; then
-	id=$(cat count)
+	id=$(cat ../assets/count)
 	mkdir "$id/"
 
 	cp "$location" "../assets/${id}_fullres.jpg"
 	mogrify -resize 2000x -quality 90 "../assets/${id}_fullres.jpg"
-	exiftool -overwrite_original -all= "../assets/${id}_fullres.jpg"
+	exiftool -overwrite_original -geotag= -EXIF= -tagsFromFile @ -exif:Orientation "../assets/${id}_fullres.jpg"
 	convert "../assets/${id}_fullres.jpg" -resize 500x "../assets/${id}_scaled.jpg"
 	cp meta.json "${id}_meta.json"
 
-	echo $((id+1)) > count
+	echo $((id+1)) > ../assets/count
 	rm meta meta.json
 
 	echo done

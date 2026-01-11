@@ -13,7 +13,7 @@ let photos = [], query, focus, bio = "";
 {
 	const params = new URLSearchParams(document.location.search);
 	query = params.get("q") || "featured";
-	focus = parseInt(params.get("f")) || -1;
+	focus = (parseInt(params.get("f"))+1 || 0) -1;
 };
 
 function queried(i){
@@ -27,7 +27,7 @@ function queried(i){
 fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 	bio = t;
 
-	fetch("src/count").then((res) => res.text()).then((text) => {
+	fetch(assets_location_raw + "count").then((res) => res.text()).then((text) => {
 		const count = parseInt(text);
 		photos = new Array(count);
 
