@@ -27,7 +27,7 @@ function queried(i){
 fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 	bio = t;
 
-	fetch(assets_location_raw + "count").then((res) => res.text()).then((text) => {
+	fetch(assets_location_raw + "count?t=" + new Date().getTime()).then((res) => res.text()).then((text) => {
 		const count = parseInt(text);
 		photos = new Array(count);
 
