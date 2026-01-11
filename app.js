@@ -74,10 +74,77 @@ function refocus(i){
 	focus = i;
 	update_ui(false);
 
+	if(focus != -1){
+		const E = document.getElementById("photo-item-" + focus.toString());
+
+		const target = Math.min(
+			Math.max(E.getBoundingClientRect().top + window.pageYOffset - 50, 0),
+			Math.max(
+				document.body.scrollHeight,
+				document.body.offsetHeight,
+				document.documentElement.clientHeight,
+				document.documentElement.scrollHeight,
+				document.documentElement.offsetHeight
+			) - window.innerHeight);
+
+		const start = window.pageYOffset;
+		const distance = target - start;
+		let T = null;
+
+		function animation(now) {
+			if(T === null) T = now;
+
+			const F = Math.min((now-T) / 750, 1);
+
+			function B(x1, y1, x2, y2, f) {
+				if(f <= 0) return 0;
+				if(f >= 1) return 1;
+
+				const sample = (t, p1, p2) => {
+					return 3*Math.pow(1-t, 2)*t*p1 + 3*(1-t)*Math.pow(t, 2)*p2 + Math.pow(t, 3);
+				};
+
+				const derivative = (t, p1, p2) => {
+					return 3*Math.pow(1-t, 2)*p1 + 6*(1-t)*t*(p2-p1) + 3*Math.pow(t, 2)*(1-p2);
+				};
+
+				let t = f;
+				for(let i=0; i<8; ++i){
+					const C = sample(t, x1, x2) - f;
+					const D = derivative(t, x1, x2);
+
+					if (Math.abs(C) < 1e-7) break;
+					if (Math.abs(D) < 1e-7) break;
+
+					t -= C/D;
+				}
+
+				return sample(t, y1, y2);
+			}
+
+			window.scrollTo(0, start + (distance * B(0.25, 0.1, 0.25, 1, F)));
+
+			if(now-T < 750) requestAnimationFrame(animation);
+		}
+
+		requestAnimationFrame(animation);
+	}
+
 	let url = "?q=" + query;
 	if(focus != -1) url += "&f=" + focus.toString();
 	window.history.pushState([query, focus], document.title, url);
 }
+
+{
+	window.addEventListener("scroll", (event) => {
+		if(focus == -1) return;
+
+		const E = document.getElementById("photo-item-" + focus.toString());
+		const rect = E.getBoundingClientRect();
+
+		if(rect.bottom < 0+100 || rect.top > window.innerHeight-100) refocus(-1);
+	});
+};
 
 window.addEventListener("popstate", (event) => {
 	if(event.state && Array.isArray(event.state) && event.state.length == 2){
@@ -436,6 +503,22 @@ function update_ui(W){
 				</p>
 			</div>`;
 
+		}
+	}
+
+	if(mode == 3 && focus != -1){
+		const E = document.getElementById("photo-item-" + focus.toString());
+
+		const E1 = document.getElementById("photo-column-1");
+		const E2 = document.getElementById("photo-column-2");
+
+		if(E.parentElement.id == "photo-column-1"){
+			E1.style.transform = "translate(0, 0)";
+			E2.style.transform = "translate(0, 0)";
+
+		}else{
+			E1.style.transform = "translate(" + column_width.toString() + "px, 0)";
+			E2.style.transform = "translate(-" + column_width.toString() + "px, 0)";
 		}
 	}
 }

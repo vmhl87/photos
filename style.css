@@ -80,6 +80,9 @@ html {
 	padding-bottom: var(--margin);
 	z-index: 99;
 
+	transition: transform 0.75s ease;
+	transform: translate(0, 0);
+
 	img {
 		display: block;
 		box-sizing: border-box;
