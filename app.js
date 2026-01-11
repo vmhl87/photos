@@ -130,7 +130,8 @@ function refocus(i){
 		requestAnimationFrame(animation);
 	}
 
-	let url = "?q=" + query;
+	let url = "?";
+	if(query != "featured") url += "q=" + query;
 	if(focus != -1) url += "&f=" + focus.toString();
 	window.history.pushState([query, focus], document.title, url);
 }
