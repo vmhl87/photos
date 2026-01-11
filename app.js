@@ -66,6 +66,8 @@ function scrollbar_width() {
 	return scrollbarWidth;
 }
 
+let manual_scroll_trip = false;
+
 function refocus(i){
 	if(i == focus && i != -1) i = -1;
 	else if(i == focus) return;
@@ -91,6 +93,8 @@ function refocus(i){
 		const start = window.pageYOffset;
 		const distance = target - start;
 		let T = null;
+
+		manual_scroll_trip = false;
 
 		function animation(now) {
 			if(T === null) T = now;
@@ -125,7 +129,7 @@ function refocus(i){
 
 			window.scrollTo(0, start + (distance * B(0.25, 0.1, 0.25, 1, F)));
 
-			if(now-T < 750) requestAnimationFrame(animation);
+			if(now-T < 750 && !manual_scroll_trip) requestAnimationFrame(animation);
 		}
 
 		requestAnimationFrame(animation);
@@ -137,16 +141,18 @@ function refocus(i){
 	window.history.pushState([query, focus], document.title, url);
 }
 
-{
-	window.addEventListener("scroll", (event) => {
-		if(focus == -1) return;
+window.addEventListener("wheel", (event) => {
+	manual_scroll_trip = true;
+});
 
-		const E = document.getElementById("photo-item-" + focus.toString());
-		const rect = E.getBoundingClientRect();
+window.addEventListener("scroll", (event) => {
+	if(focus == -1) return;
 
-		if(rect.bottom < 0+100 || rect.top > window.innerHeight-100) refocus(-1);
-	});
-};
+	const E = document.getElementById("photo-item-" + focus.toString());
+	const rect = E.getBoundingClientRect();
+
+	if(rect.bottom < 0+200 || rect.top > window.innerHeight-200) refocus(-1);
+});
 
 window.addEventListener("popstate", (event) => {
 	if(event.state && Array.isArray(event.state) && event.state.length == 2){
