@@ -42,7 +42,7 @@ fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 					if(total == count){
 						update_ui(document.body.clientWidth - scrollbar_width());
 						window.onresize = _ => {
-							update_ui(false);
+							update_ui(false, true);
 							if(focus != -1) recheck_focus();
 						}
 					}
@@ -78,7 +78,7 @@ function refocus(i){
 	window.history.replaceState([query, focus], document.title, document.location.href);
 
 	focus = i;
-	update_ui(false);
+	update_ui();
 
 	if(focus != -1){
 		const E = document.getElementById("photo-item-" + focus.toString());
@@ -164,7 +164,7 @@ function recheck_focus(){
 window.addEventListener("popstate", (event) => {
 	if(event.state && Array.isArray(event.state) && event.state.length == 2){
 		query = event.state[0], focus = event.state[1];
-		update_ui(false);
+		update_ui();
 	}
 });
 
@@ -281,7 +281,9 @@ function populate_caption(E){
 	}
 }
 
-function update_ui(W){
+let column_swap = false;
+
+function update_ui(W = false, R = false){
 	const width = W || document.body.clientWidth;
 
 	let new_mode, column_width, margin_left;
@@ -376,7 +378,7 @@ function update_ui(W){
 		}
 
 	}else{
-		mode = new_mode;
+		mode = new_mode, focus = -1;
 
 		while(document.body.lastChild) document.body.removeChild(document.body.lastChild);
 
@@ -521,19 +523,37 @@ function update_ui(W){
 		}
 	}
 
-	if(mode == 3 && focus != -1){
-		const E = document.getElementById("photo-item-" + focus.toString());
-
+	if(mode == 3){
 		const E1 = document.getElementById("photo-column-1");
 		const E2 = document.getElementById("photo-column-2");
 
-		if(E.parentElement.id == "photo-column-1"){
-			E1.style.transform = "translate(0, 0)";
-			E2.style.transform = "translate(0, 0)";
+		if(focus != -1){
+			const E = document.getElementById("photo-item-" + focus.toString());
+			column_swap = E.parentElement.id == "photo-column-2";
+		}
 
-		}else{
+		if(R){
+			E1.classList.add("no-swap");
+			E2.classList.add("no-swap");
+		}
+
+		if(column_swap){
 			E1.style.transform = "translate(" + column_width.toString() + "px, 0)";
 			E2.style.transform = "translate(-" + column_width.toString() + "px, 0)";
+
+		}else{
+			E1.style.transform = "translate(0, 0)";
+			E2.style.transform = "translate(0, 0)";
 		}
-	}
+
+		if(R){
+			function rem(){
+				E1.classList.remove("no-swap");
+				E2.classList.remove("no-swap");
+			}
+
+			requestAnimationFrame(rem);
+		}
+
+	}else column_swap = false;
 }

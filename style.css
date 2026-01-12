@@ -97,6 +97,10 @@ html {
 	}
 }
 
+div.no-swap {
+	transition: none !important;
+}
+
 div.no-transform > img:hover {
 	transform: none !important;
 }
