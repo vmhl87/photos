@@ -1,5 +1,0 @@
-#!/bin/bash
-
-source ./env
-
-cld sync --pull ../assets photo-assets
