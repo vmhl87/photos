@@ -378,7 +378,8 @@ function update_ui(W = false, R = false){
 		}
 
 	}else{
-		mode = new_mode, focus = -1;
+		if(mode != "none") focus = -1;
+		mode = new_mode;
 
 		while(document.body.lastChild) document.body.removeChild(document.body.lastChild);
 
