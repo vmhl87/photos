@@ -291,12 +291,12 @@ function update_ui(W = false, R = false){
 	if(width > min_photo_width*11/4){
 		new_mode = 3;
 		column_width = Math.min(width*4/11, max_photo_width);
-		margin_left = (width-column_width*11/4) * 2/3;
+		margin_left = (width-column_width*11/4) * 4/7;
 
 	}else if(width > min_photo_width*7/4){
 		new_mode = 2;
 		column_width = Math.min(width*4/7, max_photo_width);
-		margin_left = (width-column_width*7/4) * 2/3;
+		margin_left = (width-column_width*7/4) * 4/7;
 
 	}else{
 		new_mode = 1;
