@@ -8,6 +8,8 @@ if(window.location.href.includes("github")){
 
 const min_photo_width = 400, max_photo_width = 500;
 
+const instance_id = (new Date().getTime()).toString();
+
 let photos = [], query, focus, bio = "";
 
 {
@@ -27,14 +29,14 @@ function queried(i){
 fetch("src/bio.txt").then((res) => res.text()).then((t) => {
 	bio = t;
 
-	fetch(assets_location_raw + "count?t=" + new Date().getTime()).then((res) => res.text()).then((text) => {
+	fetch(assets_location_raw + "count?t=" + instance_id).then((res) => res.text()).then((text) => {
 		const count = parseInt(text);
 		photos = new Array(count);
 
 		let total = 0;
 
 		for(let i=0; i<count; ++i){
-			fetch(assets_location_raw + i.toString() + "_meta.json?t=" + new Date().getTime())
+			fetch(assets_location_raw + i.toString() + "_meta.json?t=" + instance_id)
 				.then((res) => res.text()).then((_text) => {
 					photos[i] = JSON.parse(_text);
 
@@ -161,10 +163,68 @@ function recheck_focus(){
 	}
 }
 
+function change_query(next_query, next_focus = -1, back_button = false){
+	if(next_query == query) return;
+
+	if(!back_button)
+		window.history.replaceState([query, focus], document.title, document.location.href);
+
+	query = next_query;
+	focus = next_focus;
+	mode = "none";
+
+	const E0 = document.getElementById("text-column");
+
+	if(E0){
+		while(E0.lastChild) E0.removeChild(E0.lastChild);
+		populate_caption(E0);
+	}
+
+	const E1 = document.getElementById("photo-column-1");
+	const E2 = document.getElementById("photo-column-2");
+
+	if(E1) E1.classList.add("fade-out");
+	if(E2) E2.classList.add("fade-out");
+
+	setTimeout(_ => {
+		const E1 = document.getElementById("photo-column-1");
+		const E2 = document.getElementById("photo-column-2");
+
+		if(E1) while(E1.lastChild) E1.removeChild(E1.lastChild);
+		if(E2) while(E2.lastChild) E2.removeChild(E2.lastChild);
+
+		window.scrollTo(0, 0);
+		update_ui(document.body.clientWidth - scrollbar_width(), false);
+
+		{
+			const E1 = document.getElementById("photo-column-1");
+			const E2 = document.getElementById("photo-column-2");
+
+			if(E1) E1.classList.add("fade-out");
+			if(E2) E2.classList.add("fade-out");
+
+			requestAnimationFrame(_ => {
+				if(E1) E1.classList.remove("fade-out");
+				if(E2) E2.classList.remove("fade-out");
+			});
+		};
+	}, 300);
+
+	if(!back_button){
+		let url = "?";
+		if(query != "featured") url += "q=" + query;
+		if(focus != -1) url += "&f=" + focus.toString();
+		window.history.pushState([query, focus], document.title, url);
+	}
+}
+
 window.addEventListener("popstate", (event) => {
 	if(event.state && Array.isArray(event.state) && event.state.length == 2){
-		query = event.state[0], focus = event.state[1];
-		update_ui();
+		if(query == event.state[0]){
+			query = event.state[0], focus = event.state[1];
+			update_ui();
+
+		}else change_query(...event.state, true);
 	}
 });
 
@@ -203,10 +263,22 @@ function populate_caption(E){
 
 		if(query == "all"){
 			T.textContent = "SEE FEATURED PHOTOS";
+
+			T.onclick = e => {
+				change_query("featured");
+				e.preventDefault();
+			};
+
 			T.href = "?";
 
 		}else{
 			T.textContent = "SEE ALL PHOTOS";
+
+			T.onclick = e => {
+				change_query("all");
+				e.preventDefault();
+			};
+
 			T.href = "?q=all";
 		}
 
@@ -270,6 +342,12 @@ function populate_caption(E){
 					{
 						const T = document.createElement("a");
 						T.textContent = tag;
+
+						T.onclick = e => {
+							change_query(tag);
+							e.preventDefault();
+						};
+
 						T.href = "?q=" + tag;
 						V.appendChild(T);
 					};
