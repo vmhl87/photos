@@ -76,10 +76,11 @@ html {
 }
 
 #photo-column-1, #photo-column-2 {
-	padding-bottom: var(--margin);
 	padding: 0px;
 	z-index: 99;
 	margin: 0px;
+
+	padding-bottom: var(--margin);
 
 	transition: transform 0.75s ease;
 	transform: translate(0, 0);

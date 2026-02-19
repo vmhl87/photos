@@ -450,7 +450,8 @@ function update_ui(W = false, R = false){
 			// TODO
 			document.body.innerHTML = `<div style="margin:0;padding:0;width:100%;height:100%;">
 				<p style="color:#666;z-index:1000;position:fixed;top:50%;left:calc(50% - 200px);transform:translate(calc(-50% + 200px), -100%);">
-					This site doesn't work<br>on mobile yet. Sorry!
+					This site doesn't work on mobile.<br>
+					Please heck again later.
 				</p>
 			</div>`;
 		}
