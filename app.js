@@ -474,6 +474,16 @@ function update_ui(W = false, R = false){
 			E.style.width = column[2].toString() + "px";
 		};
 
+		if([1].includes(mode)){
+			const E = document.getElementById("photo-column-1");
+
+			E.classList.remove("no-transform");
+			if(focus != -1) E.classList.add("no-transform");
+
+			E.style.left = margin[0].toString() + "px";
+			E.style.width = column[0].toString() + "px";
+		}
+
 		{
 			const E = document.getElementById("backdrop");
 			if(E) document.body.removeChild(E);
@@ -507,17 +517,7 @@ function update_ui(W = false, R = false){
 			}
 		}
 
-		if([1].includes(mode)){
-			const E = document.getElementById("photo-column-1");
-
-			E.classList.remove("no-transform");
-			if(focus != -1) E.classList.add("no-transform");
-
-			E.style.left = margin[0].toString() + "px";
-			E.style.width = column[0].toString() + "px";
-		}
-
-		if(query[0] == '.'){
+		if(query[0] == '.' || [1].includes(mode)){
 			const E = document.getElementById("photo-column-1");
 			E.classList.add("no-transform");
 		}
@@ -586,13 +586,15 @@ function update_ui(W = false, R = false){
 				top: "0px",
 				left: margin[0].toString() + "px",
 				width: column[0].toString() + "px",
-				paddingLeft: "var(--margin)",
+				// paddingLeft: "var(--margin)",
 			});
 
 			document.body.appendChild(E);
+
+			// TODO also add tag header
 		}
 
-		if(query[0] == '.'){
+		if(query[0] == '.' || [1].includes(mode)){
 			const E = document.getElementById("photo-column-1");
 			E.classList.add("no-transform");
 		}
@@ -647,6 +649,7 @@ function update_ui(W = false, R = false){
 					V.src = assets_location + i.toString() + suffix;
 					V.id = "photo-item-" + i.toString();
 					V.loading = "lazy";
+					V.style.paddingLeft = "var(--margin)";
 
 					if(![-1, i].includes(focus)) V.style.opacity = 0.15;
 					if(W) V.onload = load_inc;
