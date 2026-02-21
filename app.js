@@ -8,9 +8,13 @@ if(window.location.href.includes("github")){
 
 const min_photo_width = 400, max_photo_width = 500;
 
-const instance_id = (new Date().getTime()).toString();
+const instance_id = "?t=" + (new Date().getTime()).toString();
 
-let photos = [], query, focus, bio = "";
+let photos = [], query, focus, descriptions = new Map();
+
+function description(q){
+	return descriptions.get(q) || descriptions.get("*") || "";
+}
 
 {
 	const params = new URLSearchParams(document.location.search);
@@ -22,21 +26,34 @@ function queried(i){
 	if(i < 0 || i >= photos.length) return false;
 	if(query == "all") return true;
 
-	if(query[0] == '#') return i.toString() == query.slice(1);
+	if(query[0] == '.') return i.toString() == query.slice(1);
 	else return photos[i].tags.includes(query) || photos[i].tags.includes('!' + query);
 }
 
-fetch("src/bio.txt").then((res) => res.text()).then((t) => {
-	bio = t;
+fetch(assets_location_raw + "descriptions" + instance_id).then((res) => res.text()).then((t) => {
+	{
+		let block = "", key = [];
 
-	fetch(assets_location_raw + "count?t=" + instance_id).then((res) => res.text()).then((text) => {
+		for(let line of t.split('\n')){
+			if(line.length && line[0] == '[' && line[line.length-1] == ']'){
+				if(key.length) for(let k of key) descriptions.set(k.trim(), block.trim());
+				key = line.slice(1, line.length-1).split(',');
+				block = "";
+
+			}else block += line + '\n';
+		}
+
+		if(key.length) for(let k of key) descriptions.set(k.trim(), block.trim());
+	};
+
+	fetch(assets_location_raw + "count" + instance_id).then((res) => res.text()).then((text) => {
 		const count = parseInt(text);
 		photos = new Array(count);
 
 		let total = 0;
 
 		for(let i=0; i<count; ++i){
-			fetch(assets_location_raw + i.toString() + "_meta.json?t=" + instance_id)
+			fetch(assets_location_raw + i.toString() + "_meta.json" + instance_id)
 				.then((res) => res.text()).then((_text) => {
 					photos[i] = JSON.parse(_text);
 
@@ -193,6 +210,7 @@ function change_query(next_query, next_focus = -1, back_button = false){
 		if(E1) while(E1.lastChild) E1.removeChild(E1.lastChild);
 		if(E2) while(E2.lastChild) E2.removeChild(E2.lastChild);
 
+		column_swap = false;
 		window.scrollTo(0, 0);
 		update_ui(document.body.clientWidth - scrollbar_width(), false);
 
@@ -232,22 +250,34 @@ function populate_caption(E){
 	{
 		const V = document.createElement("h2");
 
-		if(focus != -1 || query[0] == "#"){
+		if(focus != -1 || query[0] == "."){
 			const I = focus == -1 ? parseInt(query.slice(1)) : focus;
 			const T = document.createElement("a");
 			T.textContent = photos[I].title.toUpperCase();
-			T.href = assets_location + I.toString() + "_fullres.jpg";
-			T.target = "_blank";
+
+			if(query[0] == '.'){
+				T.href = assets_location + I.toString() + "_fullres.jpg";
+				T.target = "_blank";
+
+			}else{
+				T.onclick = e => {
+					change_query('.' + I.toString());
+					e.preventDefault();
+				}
+
+				T.href = "?q=." + I.toString();
+			}
+
 			V.appendChild(T);
 
 		}else if(query == "all") V.textContent = "ALL PHOTOS";
 		else if(query == "featured") V.textContent = "FEATURED";
-		else V.textContent = "PHOTOS TAGGED \"" + query.toUpperCase() + "\"";
+		else V.textContent = "PHOTOS IN \"" + query.toUpperCase() + "\"";
 
 		E.appendChild(V);
 	};
 
-	if(query[0] == "#" || focus != -1){
+	if(query[0] == "." || focus != -1){
 		const V = document.createElement("p");
 		const I = focus == -1 ? parseInt(query.slice(1)) : focus;
 
@@ -261,17 +291,7 @@ function populate_caption(E){
 
 		const T = document.createElement("a");
 
-		if(query == "all"){
-			T.textContent = "SEE FEATURED PHOTOS";
-
-			T.onclick = e => {
-				change_query("featured");
-				e.preventDefault();
-			};
-
-			T.href = "?";
-
-		}else{
+		if(query == "featured"){
 			T.textContent = "SEE ALL PHOTOS";
 
 			T.onclick = e => {
@@ -280,6 +300,16 @@ function populate_caption(E){
 			};
 
 			T.href = "?q=all";
+
+		}else{
+			T.textContent = "SEE FEATURED PHOTOS";
+
+			T.onclick = e => {
+				change_query("featured");
+				e.preventDefault();
+			};
+
+			T.href = "?";
 		}
 
 		V.appendChild(T);
@@ -290,9 +320,9 @@ function populate_caption(E){
 	}
 
 	{
-		let caption = bio;
+		let caption = description(query);
 
-		if(query[0] == '#') caption = photos[parseInt(query.slice(1))].caption;
+		if(query[0] == '.') caption = photos[parseInt(query.slice(1))].caption;
 		if(focus != -1) caption = photos[focus].caption;
 
 		const lines = caption.split('\n');
@@ -314,7 +344,7 @@ function populate_caption(E){
 		if(section.length) push();
 	};
 
-	if(query[0] == "#" || focus != -1){
+	if(query[0] == "." || focus != -1){
 		const I = focus == -1 ? parseInt(query.slice(1)) : focus;
 
 		let tags = 0;
@@ -364,30 +394,60 @@ let column_swap = false;
 function update_ui(W = false, R = false){
 	const width = W || document.body.clientWidth;
 
-	let new_mode, column_width, margin_left;
+	let new_mode, column = [0, 0, 0], margin = [0, 0];
 
-	if(width > min_photo_width*11/4){
+	if(query[0] == '.' && width > max_photo_width*7/4){
+		new_mode = 2;
+
+		column[1] = Math.min(width/(11/4), max_photo_width);
+		column[0] = column[1] * 3/4;
+		column[1] = column[1] * 2;
+
+		margin[0] = width-column[0]-column[1];
+
+		margin[1] = margin[0] * 3/7;
+		margin[0] = margin[0] * 4/7;
+
+	}else if(width > min_photo_width*11/4){
 		new_mode = 3;
-		column_width = Math.min(width*4/11, max_photo_width);
-		margin_left = (width-column_width*11/4) * 4/7;
+
+		column[1] = Math.min(width/(11/4), max_photo_width);
+		column[0] = column[1] * 3/4;
+		column[2] = column[1];
+
+		margin[0] = width-column[0]-column[1]-column[2];
+
+		margin[1] = margin[0] * 3/7;
+		margin[0] = margin[0] * 4/7;
 
 	}else if(width > min_photo_width*7/4){
 		new_mode = 2;
-		column_width = Math.min(width*4/7, max_photo_width);
-		margin_left = (width-column_width*7/4) * 4/7;
+
+		column[1] = Math.min(width/(7/4), max_photo_width);
+		column[0] = column[1] * 3/4;
+
+		margin[0] = width-column[0]-column[1];
+
+		margin[1] = margin[0] * 3/7;
+		margin[0] = margin[0] * 4/7;
 
 	}else{
 		new_mode = 1;
-		column_width = Math.min(width, max_photo_width);
-		margin_left = (width-column_width)/2;
+
+		column[0] = Math.min(width, max_photo_width);
+
+		margin[0] = width-column[0];
+
+		margin[1] = margin[0]/2;
+		margin[0] = margin[0]/2;
 	}
 
 	if(mode == new_mode){
 		if([2, 3].includes(mode)){
 			const E = document.getElementById("text-column");
 
-			E.style.left = margin_left.toString() + "px";
-			E.style.width = (column_width*3/4).toString() + "px";
+			E.style.left = margin[0].toString() + "px";
+			E.style.width = column[0].toString() + "px";
 
 			while(E.lastChild) E.removeChild(E.lastChild);
 			populate_caption(E);
@@ -399,8 +459,8 @@ function update_ui(W = false, R = false){
 			E.classList.remove("no-transform");
 			if(focus != -1) E.classList.add("no-transform");
 
-			E.style.left = (margin_left+column_width*3/4).toString() + "px";
-			E.style.width = column_width.toString() + "px";
+			E.style.left = (margin[0]+column[0]).toString() + "px";
+			E.style.width = column[1].toString() + "px";
 		};
 
 		if([3].includes(mode)){
@@ -409,8 +469,8 @@ function update_ui(W = false, R = false){
 			E.classList.remove("no-transform");
 			if(focus != -1) E.classList.add("no-transform");
 
-			E.style.left = (margin_left+column_width*7/4).toString() + "px";
-			E.style.width = column_width.toString() + "px";
+			E.style.left = (margin[0]+column[0]+column[1]).toString() + "px";
+			E.style.width = column[2].toString() + "px";
 		};
 
 		{
@@ -425,8 +485,8 @@ function update_ui(W = false, R = false){
 			Object.assign(E.style, {
 				position: 'fixed',
 				top: '0px',
-				left: (margin_left+column_width*3/4).toString() + "px",
-				width: (width-margin_left-column_width*3/4).toString() + "px",
+				left: (margin[0]+column[0]).toString() + "px",
+				width: (width-margin[0]-column[0]).toString() + "px",
 				height: "100%",
 			});
 
@@ -447,13 +507,18 @@ function update_ui(W = false, R = false){
 		}
 
 		if([1].includes(mode)){
-			// TODO
-			document.body.innerHTML = `<div style="margin:0;padding:0;width:100%;height:100%;">
-				<p style="color:#666;z-index:1000;position:fixed;top:50%;left:calc(50% - 200px);transform:translate(calc(-50% + 200px), -100%);">
-					This site doesn't work on mobile.<br>
-					Please heck again later.
-				</p>
-			</div>`;
+			const E = document.getElementById("photo-column-1");
+
+			E.classList.remove("no-transform");
+			if(focus != -1) E.classList.add("no-transform");
+
+			E.style.left = margin[0].toString() + "px";
+			E.style.width = column[0].toString() + "px";
+		}
+
+		if(query[0] == '.'){
+			const E = document.getElementById("photo-column-1");
+			E.classList.add("no-transform");
 		}
 
 	}else{
@@ -469,8 +534,8 @@ function update_ui(W = false, R = false){
 			Object.assign(E.style, {
 				position: 'fixed',
 				top: '0px',
-				left: margin_left.toString() + "px",
-				width: (column_width*3/4).toString() + "px",
+				left: margin[0].toString() + "px",
+				width: column[0].toString() + "px",
 				zIndex: "1000",
 			});
 
@@ -488,8 +553,8 @@ function update_ui(W = false, R = false){
 			Object.assign(E.style, {
 				position: "absolute",
 				top: "0px",
-				left: (margin_left+column_width*3/4).toString() + "px",
-				width: column_width.toString() + "px",
+				left: (margin[0]+column[0]).toString() + "px",
+				width: column[1].toString() + "px",
 			});
 
 			document.body.appendChild(E);
@@ -504,12 +569,32 @@ function update_ui(W = false, R = false){
 			Object.assign(E.style, {
 				position: "absolute",
 				top: "0px",
-				left: (margin_left+column_width*7/4).toString() + "px",
-				width: column_width.toString() + "px",
+				left: (margin[0]+column[0]+column[1]).toString() + "px",
+				width: column[2].toString() + "px",
 			});
 
 			document.body.appendChild(E);
 		};
+
+		if([1].includes(mode)){
+			const E = document.createElement("div");
+			E.id = "photo-column-1";
+
+			Object.assign(E.style, {
+				position: "absolute",
+				top: "0px",
+				left: margin[0].toString() + "px",
+				width: column[0].toString() + "px",
+				paddingLeft: "var(--margin)",
+			});
+
+			document.body.appendChild(E);
+		}
+
+		if(query[0] == '.'){
+			const E = document.getElementById("photo-column-1");
+			E.classList.add("no-transform");
+		}
 
 		if(focus != -1){
 			const E = document.createElement("div");
@@ -518,8 +603,8 @@ function update_ui(W = false, R = false){
 			Object.assign(E.style, {
 				position: 'fixed',
 				top: '0px',
-				left: (margin_left+column_width*3/4).toString() + "px",
-				width: (column_width*2).toString() + "px",
+				left: (margin[0]+column[0]).toString() + "px",
+				width: (column[1]+column[2]).toString() + "px",
 				height: "100%",
 			});
 
@@ -536,6 +621,8 @@ function update_ui(W = false, R = false){
 		function load_inc(){
 			loaded_count += 1;
 			if(loaded_count == expected_count){
+				update_ui(false, true);
+
 				if(focus != -1){
 					const E = document.getElementById("photo-item-" + focus.toString());
 					if(E){
@@ -546,60 +633,74 @@ function update_ui(W = false, R = false){
 			}
 		}
 
-		if([2].includes(mode)){
-			const E = document.getElementById("photo-column-1");
+		{
+			const suffix = query[0] == '.' ? "_fullres.jpg" : "_scaled.jpg";
 
-			for(let i=photos.length-1; i>=0; --i){
-				if(!queried(i)) continue;
+			if([1].includes(mode)){
+				const E1 = document.getElementById("photo-column-1");
 
-				const V = document.createElement("img");
-				V.src = assets_location + i.toString() + "_scaled.jpg";
-				V.id = "photo-item-" + i.toString();
-				V.loading = "lazy";
+				for(let i=photos.length-1; i>=0; --i){
+					if(!queried(i)) continue;
 
-				if(![-1, i].includes(focus)) V.style.opacity = 0.15;
-				if(W) V.onload = load_inc;
+					const V = document.createElement("img");
+					V.src = assets_location + i.toString() + suffix;
+					V.id = "photo-item-" + i.toString();
+					V.loading = "lazy";
 
-				V.onclick = _ => refocus(i);
+					if(![-1, i].includes(focus)) V.style.opacity = 0.15;
+					if(W) V.onload = load_inc;
 
-				E.appendChild(V);
+					E.appendChild(V);
+				}
 			}
-		}
 
-		if([3].includes(mode)){
-			const E1 = document.getElementById("photo-column-1");
-			const E2 = document.getElementById("photo-column-2");
+			if([2].includes(mode)){
+				const E = document.getElementById("photo-column-1");
 
-			let h1 = 0, h2 = 0;
+				for(let i=photos.length-1; i>=0; --i){
+					if(!queried(i)) continue;
 
-			for(let i=photos.length-1; i>=0; --i){
-				if(!queried(i)) continue;
+					const V = document.createElement("img");
+					V.src = assets_location + i.toString() + suffix;
+					V.id = "photo-item-" + i.toString();
+					V.loading = "lazy";
 
-				const V = document.createElement("img");
-				V.src = assets_location + i.toString() + "_scaled.jpg";
-				V.id = "photo-item-" + i.toString();
-				V.loading = "lazy";
+					if(![-1, i].includes(focus)) V.style.opacity = 0.15;
+					if(W) V.onload = load_inc;
 
-				if(![-1, i].includes(focus)) V.style.opacity = 0.15;
-				if(W) V.onload = load_inc;
+					V.onclick = _ => refocus(i);
 
-				V.onclick = _ => refocus(i);
-
-				const height = column_width * photos[i].dimensions[1]/photos[i].dimensions[0];
-
-				if(h1 <= h2) E1.appendChild(V), h1 += height;
-				else E2.appendChild(V), h2 += height;
+					E.appendChild(V);
+				}
 			}
-		}
 
-		if([1].includes(mode)){
-			// TODO
-			document.body.innerHTML = `<div style="margin:0;padding:0;width:100%;height:100%;">
-				<p style="color:#666;z-index:1000;position:fixed;top:50%;left:calc(50% - 200px);transform:translate(calc(-50% + 200px), -100%);">
-					This site doesn't work<br>on mobile yet. Sorry!
-				</p>
-			</div>`;
+			if([3].includes(mode)){
+				const E1 = document.getElementById("photo-column-1");
+				const E2 = document.getElementById("photo-column-2");
 
+				let h1 = 0, h2 = 0;
+
+				for(let i=photos.length-1; i>=0; --i){
+					if(!queried(i)) continue;
+
+					const V = document.createElement("img");
+					V.src = assets_location + i.toString() + "_fullres.jpg";
+					V.id = "photo-item-" + i.toString();
+					V.loading = "lazy";
+
+					if(![-1, i].includes(focus)) V.style.opacity = 0.15;
+					if(W) V.onload = load_inc;
+
+					V.onclick = _ => refocus(i);
+
+					const height = column[1] * photos[i].dimensions[1]/photos[i].dimensions[0];
+
+					if(h1 <= h2) E1.appendChild(V), h1 += height;
+					else E2.appendChild(V), h2 += height;
+				}
+
+				// TODO also display descriptions, tags, etc
+			}
 		}
 	}
 
@@ -618,8 +719,8 @@ function update_ui(W = false, R = false){
 		}
 
 		if(column_swap){
-			E1.style.transform = "translate(" + column_width.toString() + "px, 0)";
-			E2.style.transform = "translate(-" + column_width.toString() + "px, 0)";
+			E1.style.transform = "translate(" + column[2].toString() + "px, 0)";
+			E2.style.transform = "translate(-" + column[1].toString() + "px, 0)";
 
 		}else{
 			E1.style.transform = "translate(0, 0)";
