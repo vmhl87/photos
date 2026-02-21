@@ -651,7 +651,7 @@ function update_ui(W = false, R = false){
 					if(![-1, i].includes(focus)) V.style.opacity = 0.15;
 					if(W) V.onload = load_inc;
 
-					E.appendChild(V);
+					E1.appendChild(V);
 				}
 			}
 
