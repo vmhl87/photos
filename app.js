@@ -94,7 +94,7 @@ function refocus(i){
 	if(i == focus && i != -1) i = -1;
 	else if(i == focus) return;
 
-	window.history.replaceState([query, focus], document.title, document.location.href);
+	// window.history.replaceState([query, focus], document.title, document.location.href);
 
 	focus = i;
 	update_ui();
@@ -160,7 +160,8 @@ function refocus(i){
 	let url = "?";
 	if(query != "featured") url += "q=" + query;
 	if(focus != -1) url += "&f=" + focus.toString();
-	window.history.pushState([query, focus], document.title, url);
+	// window.history.pushState([query, focus], document.title, url);
+	window.history.replaceState([query, focus], document.title, url);
 }
 
 window.addEventListener("wheel", (event) => {
